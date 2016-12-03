@@ -9,10 +9,12 @@
 
 			body {
 				/*background-color: #ccc;*/
+				font: "Lato";
+				font-size: 10px;				
 			}
 
 			svg {
-				background-color: white;
+				background-color: #131325;
 			}
 			#container{
 				margin-left:10px;
@@ -31,11 +33,27 @@
 				font-family: sans-serif;
 				font-size: 11px;
 			}
+			#buttonContainer {
+				margin-bottom: 10px;
+			}
 
+			button {
+			    /*border: 2px dashed yellow;*/
+			    padding: 5px 15px 20px 10px;
+			    border-radius: 5px 10px 0px 20px;
+			    background-color: lightblue;
+			    border: none;
+			    color: white;
+			    text-transform: uppercase;
+			}
 		</style>
 	</head>
 	<body>
-		<div id= "container"></div>
+		<div id= "container">
+				<div id="buttonContainer">
+					<button id="sort">spin</button>
+				</div>
+		</div>
 		<script type="text/javascript">
 			var padding = 40;
 
@@ -44,8 +62,10 @@
 			var h = window.innerHeight-10;
 
 			var data;
-			d3.csv("dates2.csv", function(d){
+			var data1;
+			d3.csv("dates1.csv", function(d){
 				data = d;
+				data1 = d;
 				console.log(data);
 				processData();
 			})
@@ -60,10 +80,10 @@
 		    function onlyUnique(value, index, self) { 
 		        return self.indexOf(value) === index;
 		    } 
-		    function peopleConsolidation(givenAuthor,i) { 
+		    function peopleConsolidation(givenPerson,i) { 
 		        var total = 0;
-		        for (i = 0;i<theseAuthors.length; i++){ 
-		            if(theseAuthors[i] == givenAuthor){
+		        for (i = 0;i<people.length; i++){ 
+		            if(people[i] == givenPerson){
 		                total++;
 		            }else{
 		            }
@@ -72,12 +92,20 @@
 		     } 
 			var normDates = [];
 			var people = [];
-
+			var thesePeople = [];
 			function processData(){
 				for(i=0; i<data.length; i++){
 					normDates.push(new Date(dateParser.parse(data[i].date)));							
 				
-					people.push(data[i].attendees)
+					//each event has an array of attendees             
+					people.push(data[i].attendees.split(", ")); 
+
+					//long list of all attendees
+		            for (j=0; j<people[i].length; j++){
+		                thesePeople.push(people[i][j]);   
+		            }
+					// keywords[i] = data[i].Keywords.split(", ");
+
 				}
 				createScales();
 			}
@@ -96,18 +124,124 @@
 			var uniquePeople;
 		    var colorPeople = d3.scale.ordinal()
 		        .range(colorSpectrum);
+
+		    var thetaAxes = d3.time.scale()
+		    	.range([-Math.PI/2, Math.PI*1.5])
 			function createScales(){
 				dateMin = d3.min(normDates);
 				dateMax = d3.max(normDates);
-				uniquePeople = people.filter(onlyUnique)
+
+				//unique names of attendees
+				uniquePeople = thesePeople.filter(onlyUnique)
 				
 				colorPeople
 			        .domain(uniquePeople)
-			//Create scale functions
+				thetaAxes
+					.domain([dateMin, dateMax])
 				xScale
 					.domain([dateMin, dateMax])
 
-			// var yScale = d3.scale.linear()
+		        for (i = 0; i < data.length; i++) {
+					data[i].date=normDates[i];
+					data[i].attendees = people[i];
+					// data[i].who = people[i];
+						// "who": people[i],
+						// "date": normDates[i],
+						// "how": event.description,
+						// "goals": data[i].3_goals,
+						// "highs": data[i].3_highlights,
+						// "involvement": data[i].involvement,
+						// "loc": data[i].location,
+						// "eventName": data[i].eventName,//new Date(event.start.dateTime),
+						// "link": data[i].eventLink,//new Date(event.end.dateTime),
+						// "refs": data[i].references,
+						// "tags": data[i].tags						
+				}
+				createSVG();
+			}
+			var svg;
+			var svgH = h/2;
+			function createSVG(){
+				//Create SVG element
+				svg = d3.select("#container")
+							.append("svg")
+							.attr("width", w)
+							.attr("height", svgH)
+							.attr("transform", "translate("+0+","+h/2+")");
+				visData();	
+			}
+
+			var groups, circs;
+			function visData(){
+				console.log(data.length);
+				//Create circles
+				groups = svg.selectAll("g")
+					.data(data)
+					.enter()
+					.append("g")
+					.attr("class","event")
+					.attr("transform", function(d, i) {
+				  		return "translate(" + xScale(d.date) + ",0)";
+					});
+				circs = groups.selectAll(".event")
+					.data(function(d){
+						return d.attendees
+					})
+					.enter()
+					.append("circle")
+					.attr("class",function(d){
+						return d;
+					})
+				   	.attr("cx", 0)
+				   	.attr("cy", svgH/2)
+				   	.attr("fill", function(d,i){
+				   		// console.log(d.attendee)
+					   	return colorPeople(d)
+				   	})
+				   	.attr("r",5)
+				   	.attr("opacity",.3)
+				   	.attr("stroke", function(d,i){
+				   		if(i>0){
+				   			return "white";
+				   		}else{
+				   			return "none";
+				   		}
+				   	})
+				   	.style("stroke-width",2)
+				   	.style("stroke-opacity",1)
+				   	.on("click", function(){
+				   		expand();
+				   	});
+			}
+			function expand(){
+				circs
+					.transition()
+				   	.delay(function(d,i){
+				   		return i*50;
+				   	})
+				   	.duration(1000)
+				   	.attr("cy", function(d,i){
+				   		return svgH/2-i*15;
+				   	})	
+			}			   	
+			function rotate(){
+				groups
+					.transition()
+				   	.delay(function(d,i){
+				   		return i*50;
+				   	})
+				   	.duration(1000)
+				   	.attr("transform", function(d,i){
+						return 
+						"rotate(" + (thetaAxes(d.date)) + ","+0+")";
+				   		// Math.cos( thetaAxes
+				   	})
+			}
+
+		</script>
+	</body>
+</html>
+<!-- 			// var yScale = d3.scale.linear()
 			// 					 .domain([0, d3.max(dataset, function(d) { return d[1]; })])
 			// 					 .range([h - padding, padding]);
 
@@ -121,42 +255,4 @@
 			// var yAxis = d3.svg.axis()
 			// 				  .scale(yScale)
 			// 				  .orient("left")
-			// 				  .ticks(5);
-				createSVG();
-			}
-			var svg;
-			function createSVG(){
-				//Create SVG element
-				svg = d3.select("#container")
-							.append("svg")
-							.attr("width", w)
-							.attr("height", h);
-				visData();	
-			}
-
-
-			function visData(){
-				console.log(data.length);
-				//Create circles
-				svg.append("g")
-				   .attr("id", "circles")
-				   .selectAll("circle")
-				   .data(data)
-				   .enter()
-				   .append("circle")
-				   .attr("cx", function(d,i) {
-				   		return xScale(new Date(dateParser.parse(d.date)));
-				   		// return 10+i*15;
-				   	})
-				   .attr("cy", h/2)
-				   .attr("fill",function(d,i){
-				   		// console.log(d.attendee)
-					   	return colorPeople(d.attendees)
-				   })
-				   .attr("r",5)
-			}
-
-
-		</script>
-	</body>
-</html>
+			// 				  .ticks(5); -->
