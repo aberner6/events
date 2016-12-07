@@ -61,14 +61,58 @@
 			var w = $("#container").innerWidth()-20;
 			var h = window.innerHeight-10;
 
-			var data;
+			var data = [];
 			var data1;
-			d3.csv("dates1.csv", function(d){
-				data = d;
-				data1 = d;
-				console.log(data);
-				processData();
-			})
+
+
+			$(document).ready(function() {
+
+			  // start get - URI (REPLACE KEY WITH YOUR OWN, callback function)
+			  
+			  // see http://coderwall.com/p/duapqq for tutorial on using Google Spreadsheet as JSON
+			  $.getJSON("https://spreadsheets.google.com/feeds/list/1B-d6VqsDpu4kpOKgAnTOXdFryPA8cuwhZwrFSr9dyyE/o4n7bo6/public/values?alt=json", function(datoo) {
+			 // https://docs.google.com/spreadsheets/d/1B-d6VqsDpu4kpOKgAnTOXdFryPA8cuwhZwrFSr9dyyE/pubhtml?gid=280837132&single=true
+			 // https://docs.google.com/spreadsheets/d/1B-d6VqsDpu4kpOKgAnTOXdFryPA8cuwhZwrFSr9dyyE/pubhtml
+			 // https://docs.google.com/a/ciid.dk/spreadsheets/d/1B-d6VqsDpu4kpOKgAnTOXdFryPA8cuwhZwrFSr9dyyE/edit?usp=sharing
+			 // https://docs.google.com/spreadsheets/d/1B-d6VqsDpu4kpOKgAnTOXdFryPA8cuwhZwrFSr9dyyE/pubhtml
+			  //start each
+			  // https://docs.google.com/spreadsheets/d/1B-d6VqsDpu4kpOKgAnTOXdFryPA8cuwhZwrFSr9dyyE/edit?usp=sharing
+
+			    var entry = datoo.feed.entry;
+			    console.log(entry);
+			            // for (j = 0; j < data.feed.entry.length; j++) { 
+                        // entry1.push({
+                            // "photo": data.feed.entry[j]['gsx$imageurl']['$t'],
+			    	for (i=0; i<entry.length; i++){
+					    data.push({
+							"date": entry[i]['gsx$date']['$t'],
+							"attendees": entry[i]['gsx$attendees']['$t'],
+							// data[i].who = people[i];
+								// "who": people[i],
+								// "date": normDates[i],
+								// "how": event.description,
+								// "goals": data[i].3_goals,
+								// "highs": data[i].3_highlights,
+								// "involvement": data[i].involvement,
+								// "loc": data[i].location,
+								// "eventName": data[i].eventName,//new Date(event.start.dateTime),
+								// "link": data[i].eventLink,//new Date(event.end.dateTime),
+								// "refs": data[i].references,
+								// "tags": data[i].tags					    	
+					    })
+					}
+					console.log(data);
+					processData();
+
+			  }); // end get 
+			}); // end document.ready
+
+			// d3.csv("dates1.csv", function(d){
+			// 	data = d;
+			// 	data1 = d;
+			// 	console.log(data);
+			// 	processData();
+			// })
 			var dateMin, dateMax;
 			// 1 = "11/12/2015"
 			// var dateParser1 = d3.time.format("%m/%d/%Y");
